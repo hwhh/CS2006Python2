@@ -23,10 +23,14 @@ def read_csv(file_name):
     data = data[data["Hours worked per week"].isin([1, 2, 3, 4, -9])]
     data = data[data["Approximated Social Grade"].isin([1, 2, 3, 4, -9])]
     data.duplicated(["Person ID"], keep="first")
-    data.to_csv('refined.csv', index=False)
-    print(data)
+    return data
+    #data.to_csv('refined.csv', index=False)
 
 
+def create_plot(char_type, data, column):
+    data[column].value_counts().plot(kind=char_type)
+    plt.show()
+    #pl = data.plot(x=data[column], kind=char_type)
 
 
-read_csv("data")
+create_plot("bar", read_csv("data"), "Region")
