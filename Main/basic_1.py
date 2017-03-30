@@ -23,13 +23,8 @@ def read_csv(file_name):
     data = data[data["Hours worked per week"].isin([1, 2, 3, 4, -9])]
     data = data[data["Approximated Social Grade"].isin([1, 2, 3, 4, -9])]
     data.duplicated(["Person ID"], keep="first")
+    data.to_csv('refined.csv', index=False)
     print(data)
-
-
-
-
-
-
 
 
 
