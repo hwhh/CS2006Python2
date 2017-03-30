@@ -1,4 +1,6 @@
 import pandas as pd
+import matplotlib as ml
+
 
 
 def readCsv():
@@ -20,7 +22,9 @@ def readCsv():
     data = data[data["Industry"].isin([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -9])]
     data = data[data["Hours worked per week"].isin([1, 2, 3, 4, -9])]
     data = data[data["Approximated Social Grade"].isin(["AB", "C1", "C2", "DE", -9])]
+    data.duplicated(["Person ID"], keep="first")
     print(data)
+
 
 
 
