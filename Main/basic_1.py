@@ -1,10 +1,10 @@
 import pandas as pd
-import matplotlib as ml
+import matplotlib.pyplot as plt
 
 
 
-def readCsv():
-    data = pd.read_csv("data", error_bad_lines=False)
+def read_csv(file_name):
+    data = pd.read_csv(file_name, error_bad_lines=False)
     data = data[data["Region"].isin(["E12000001", "E12000002", "E12000003", "E12000004", "E12000005", "E12000006", "E12000007", "E12000008", "E12000009", "W92000004"])]
     data = data[data["Residence Type"].isin(['C', 'H'])]
     data = data[data["Family Composition"].isin([1, 2, 3, 4, 5, 6, -9])]# can change to: list(range(0, x).append(-9)
@@ -21,11 +21,17 @@ def readCsv():
     data = data[data["Occupation"].isin([1, 2, 3, 4, 5, 6, 7, 8, 9, -9])]
     data = data[data["Industry"].isin([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, -9])]
     data = data[data["Hours worked per week"].isin([1, 2, 3, 4, -9])]
-    data = data[data["Approximated Social Grade"].isin(["AB", "C1", "C2", "DE", -9])]
+    data = data[data["Approximated Social Grade"].isin([1, 2, 3, 4, -9])]
     data.duplicated(["Person ID"], keep="first")
     print(data)
 
 
 
 
-readCsv()
+
+
+
+
+
+
+read_csv("data")
