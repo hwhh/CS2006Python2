@@ -1,8 +1,18 @@
+import plotly
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
+import plotly.plotly as py
 
+import numpy as np
+from tabulate import tabulate
+
+plotly.tools.set_credentials_file(username='hwhh', api_key='N2vCMdq9jiSqdFGIzNsD')
+
+colours = ['#009094', '#97bf0d', '#0028ff', '#68071d', '#7aa74d', '#164af9', '#615a51', '#0b4a72', '#b8101f', '#e6dbaf',
+           '#e1fffe', '#0e320c', '#e3f1fd', '#f0c141', '#e44849', '#947057', '#251c38', '#5d478d', '#feb4b1', '#0000c8',
+           '#f17a9c', '#ffc6d5', '#ff99cc', '#67d5ff', '#f0f8ff', '#794740', '#fab631', '#a5a44a', '#28352c', '#0e2024',
+           '#37526f', '#ad1a2c', '#ba7259', '#6d9da1', '#e15c39', '#929f36', '#deb390', '#d14643', '#74737a', '#65646c',
+           '#54535c', '#42404a']
 
 regions = {'E12000001': 'North East', 'E12000002': 'North West', 'E12000003': 'Yorkshire and the Humber',
            'E12000004': 'East Midlands', 'E12000005': 'West Midlands', 'E12000006': 'East of England',
@@ -83,25 +93,69 @@ def create_pie_plot(char_type, df, column, names, title):
     plt.show()
 
 
+def create_plotly_plot(df, col1, col2, title):
+    gf = df.groupby(col1)
+    column1 = df[col1].unique()
+    out = []
+    for column, fill_color in zip(column1, colours):  # [start:stop:step]
+        group_1 = gf.get_group(column)
+        column2 = group_1[col2].tolist()
+
+        length = len(column2)
+        coords = [column] * length
+        count = group_1['count'].tolist()
+        zeros = [0] * length
+        out.append(dict(
+            type='scatter3d',
+            mode='lines',
+            x=column2 + column2[::-1] + [column2[0]],  # year loop: in incr. order then in decr. order then years[0]
+            y=coords * 2 + [coords[0]],
+            z=count + zeros + [count[0]],
+            name='',
+            surfacecolor=fill_color,
+            surfaceaxis=1,  # add a surface axis ('1' refers to axes[1] i.e. the y-axis)
+            line=dict(
+                color='black',
+                width=4
+            ),
+        ))
+
+    layout = dict(title=title, showlegend=False,
+                  scene=dict(
+                      xaxis=dict(title=''),
+                      yaxis=dict(title=''),
+                      zaxis=dict(title=''),
+                      camera=dict(
+                          eye=dict(x=-1.7, y=-1.7, z=0.5)
+                      )
+                  )
+                  )
+
+    fig = dict(data=out, layout=layout)
+    url = py.plot(fig, validate=False, filename='filled-3d-lines')
+
+
 def create_3d_plot(df):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plt.xticks([-9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    plt.yticks(np.arange(10), df.index.levels[0])
-    for x in range(len(df.index.levels[0])):
-        xs = df[df.index.levels[0][x]]
-        ax.bar(xs.index, xs.values, zs=x, zdir='y')
-    plt.show()
+    print(df.size())
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # plt.xticks([-9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    # plt.yticks(np.arange(10), df.index.levels[0])
+    # for x in range(len(df.index.levels[0])):
+    #     xs = df[df.index.levels[0][x]]
+    #     ax.bar(xs.index, xs.values, zs=x, zdir='y')
+    # plt.show()
 
 
 def group(df, col1, col2):
-    return df.groupby([col1, col2]).size()
+    return df.groupby([col1, col2]).size().reset_index(name='count')
+    # return df.groupby([col1, col2])[col1].count()#df.groupby([col1, col2]).size()
 
 
 data = read_csv('data')
-
+group(data, 'Region', 'Industry')
 # create_bar_plot('bar', data, 'Region', regions, 'Number of Records for each region', 'Regions', 'No. of Records')
-create_3d_plot(group(data, 'Region', 'Industry'))
+create_plotly_plot(group(data, 'Region', 'Industry'), 'Region', 'Industry', 'Region vs Industry')
 
 # analyse(d)
 # create_bar_plot('bar', data, 'Occupation', occupations, 'Number of Records for each Occupation', 'Occupation', 'No. of Records')
