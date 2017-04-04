@@ -1,10 +1,14 @@
+import vincent
 import plotly
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.plotly as py
-
 import numpy as np
 from tabulate import tabulate
+from mpl_toolkits.mplot3d import Axes3D
+import folium
+from IPython.display import HTML
+from vincent import AxisProperties, PropertySet, ValueRef
 
 plotly.tools.set_credentials_file(username='hwhh', api_key='N2vCMdq9jiSqdFGIzNsD')
 
@@ -17,6 +21,11 @@ colours = ['#009094', '#97bf0d', '#0028ff', '#68071d', '#7aa74d', '#164af9', '#6
 regions = {'E12000001': 'North East', 'E12000002': 'North West', 'E12000003': 'Yorkshire and the Humber',
            'E12000004': 'East Midlands', 'E12000005': 'West Midlands', 'E12000006': 'East of England',
            'E12000007': 'London', 'E12000008': 'South East', 'E12000009': 'South West', 'W92000004': 'Wales'}
+
+coordinates = {'E12000001': [54.9, -1.6], 'E12000002': [54.04, -2.79], 'E12000003': [53, 95, -1.007],
+               'E12000004': [52.95, -0.604], 'E12000005': [52.39, -2.04], 'E12000006': [52.316, 0.658],
+               'E12000007': [51.5, -0.12], 'E12000008': [50.96, -0.65], 'E12000009': [50.9, -3.34],
+               'W92000004': [52.46, -3.77]}
 
 occupations = {1: "Managers, Directors and Senior Officials", 2: "Professional",
                3: "Associate Professional and Technical", 4: "Administrative and Secretarial",
@@ -100,16 +109,15 @@ def create_plotly_plot(df, col1, col2, title):
     for column, fill_color in zip(column1, colours):  # [start:stop:step]
         group_1 = gf.get_group(column)
         column2 = group_1[col2].tolist()
-
         length = len(column2)
-        coords = [column] * length
+        z_axis = [column] * length
         count = group_1['count'].tolist()
         zeros = [0] * length
         out.append(dict(
             type='scatter3d',
             mode='lines',
             x=column2 + column2[::-1] + [column2[0]],  # year loop: in incr. order then in decr. order then years[0]
-            y=coords * 2 + [coords[0]],
+            y=z_axis * 2 + [z_axis[0]],
             z=count + zeros + [count[0]],
             name='',
             surfacecolor=fill_color,
@@ -121,42 +129,71 @@ def create_plotly_plot(df, col1, col2, title):
         ))
 
     layout = dict(title=title, showlegend=False,
-                  scene=dict(
-                      xaxis=dict(title=''),
-                      yaxis=dict(title=''),
-                      zaxis=dict(title=''),
-                      camera=dict(
-                          eye=dict(x=-1.7, y=-1.7, z=0.5)
-                      )
-                  )
-                  )
-
+                  scene=dict(xaxis=dict(title=''), yaxis=dict(title=''), zaxis=dict(title=''),
+                             camera=dict(eye=dict(x=-1.7, y=-1.7, z=0.5))))
     fig = dict(data=out, layout=layout)
-    url = py.plot(fig, validate=False, filename='filled-3d-lines')
+    url = py.plot(fig, validate=False, filename='3d-lines')
 
 
 def create_3d_plot(df):
-    print(df.size())
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # plt.xticks([-9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    # plt.yticks(np.arange(10), df.index.levels[0])
-    # for x in range(len(df.index.levels[0])):
-    #     xs = df[df.index.levels[0][x]]
-    #     ax.bar(xs.index, xs.values, zs=x, zdir='y')
-    # plt.show()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plt.xticks(df.index.levels[1])
+    plt.yticks(range(len(df.index.levels[0])), df.index.levels[0])
+    for x in range(len(df.index.levels[0])):
+        xs = df[df.index.levels[0][x]]
+        ax.bar(xs.index, xs.values, zs=x, zdir='y')
+    plt.show()
 
 
-def group(df, col1, col2):
-    return df.groupby([col1, col2]).size().reset_index(name='count')
-    # return df.groupby([col1, col2])[col1].count()#df.groupby([col1, col2]).size()
+def group(df, col1, col2, do_print):
+    df1 = df.groupby([col1, col2]).size()
+    if do_print:
+        print(tabulate(df1.reset_index(name='count'), headers=["Index", col1, col2, 'Count'], tablefmt="fancy_grid"))
+    return df1
 
 
-data = read_csv('data')
-group(data, 'Region', 'Industry')
+def create_map(df):
+    regions_geo = 'regions.geojson'
+    df1 = df.groupby('Region').size()
+    map_1 = folium.Map(location=[52.958, 0.9], zoom_start=7)
+    map_1.choropleth(geo_path=regions_geo, data=df1,
+                   columns=['region_code', 'Size'],
+                   key_on='properties.region_code',
+                   fill_color='BuPu', fill_opacity=0.7, line_opacity=0.2,
+                   legend_name='No. of people from region in census')
+    return map_1
+
+def create_bar_plots_on_map(map_1, df, col1):
+    for region in df['Region'].unique().tolist():
+        df1 = df[df['Region'].str.contains(region)]
+        print(df1)
+        bar = vincent.Bar(df1[col1].value_counts(), width=350, height=175)
+        loc = coordinates.get(region)
+        popup1 = folium.Popup(max_width=800, ).add_child(folium.Vega(bar, width=400, height=200))
+        folium.RegularPolygonMarker(loc, fill_color='#43d9de', radius=12, popup=popup1).add_to(map_1)
+    map_1.save('map_1.html')
+
+
+
+d = read_csv('data')
+create_bar_plots_on_map(create_map(d), d, 'Region')
+
+# create_map(data)
+# create_3d_bar(group(data, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry')
+# create_plotly_plot(group(data, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry', 'Region vs Industry')
+
+
+
+
+
+
+
+
+
+
 # create_bar_plot('bar', data, 'Region', regions, 'Number of Records for each region', 'Regions', 'No. of Records')
-create_plotly_plot(group(data, 'Region', 'Industry'), 'Region', 'Industry', 'Region vs Industry')
-
+# create_plotly_plot(group(data, 'Occupation', 'Approximated Social Grade').reset_index(name='count'), 'Occupation', 'Approximated Social Grade', 'Occupation vs Approximated Social Grade')
 # analyse(d)
 # create_bar_plot('bar', data, 'Occupation', occupations, 'Number of Records for each Occupation', 'Occupation', 'No. of Records')
 # create_pie_plot('pie', data, 'Age', ages, 'Distribution of the sample by age')
