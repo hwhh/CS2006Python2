@@ -3,12 +3,10 @@ import plotly
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.plotly as py
-import numpy as np
 from tabulate import tabulate
 from mpl_toolkits.mplot3d import Axes3D
 import folium
-from IPython.display import HTML
-from vincent import AxisProperties, PropertySet, ValueRef
+
 
 plotly.tools.set_credentials_file(username='hwhh', api_key='N2vCMdq9jiSqdFGIzNsD')
 
@@ -22,7 +20,7 @@ regions = {'E12000001': 'North East', 'E12000002': 'North West', 'E12000003': 'Y
            'E12000004': 'East Midlands', 'E12000005': 'West Midlands', 'E12000006': 'East of England',
            'E12000007': 'London', 'E12000008': 'South East', 'E12000009': 'South West', 'W92000004': 'Wales'}
 
-coordinates = {'E12000001': [54.9, -1.6], 'E12000002': [54.04, -2.79], 'E12000003': [53, 95, -1.007],
+coordinates = {'E12000001': [54.9, -1.6], 'E12000002': [54.04, -2.79], 'E12000003': [53.95, -1.007],
                'E12000004': [52.95, -0.604], 'E12000005': [52.39, -2.04], 'E12000006': [52.316, 0.658],
                'E12000007': [51.5, -0.12], 'E12000008': [50.96, -0.65], 'E12000009': [50.9, -3.34],
                'W92000004': [52.46, -3.77]}
@@ -116,23 +114,21 @@ def create_plotly_plot(df, col1, col2, title):
         out.append(dict(
             type='scatter3d',
             mode='lines',
-            x=column2 + column2[::-1] + [column2[0]],  # year loop: in incr. order then in decr. order then years[0]
+            x=column2 + column2[::-1] + [column2[0]],
             y=z_axis * 2 + [z_axis[0]],
             z=count + zeros + [count[0]],
             name='',
             surfacecolor=fill_color,
-            surfaceaxis=1,  # add a surface axis ('1' refers to axes[1] i.e. the y-axis)
+            surfaceaxis=1,
             line=dict(
                 color='black',
                 width=4
             ),
         ))
 
-    layout = dict(title=title, showlegend=False,
-                  scene=dict(xaxis=dict(title=''), yaxis=dict(title=''), zaxis=dict(title=''),
-                             camera=dict(eye=dict(x=-1.7, y=-1.7, z=0.5))))
+    layout = dict(title=title, showlegend=False,scene=dict(xaxis=dict(title=''),yaxis=dict(title=''),zaxis=dict(title=''),camera=dict(eye=dict(x=-1.7, y=-1.7, z=0.5))))
     fig = dict(data=out, layout=layout)
-    url = py.plot(fig, validate=False, filename='3d-lines')
+    return py.iplot(fig, validate=False, filename='3d-lines')
 
 
 def create_3d_plot(df):
@@ -153,35 +149,33 @@ def group(df, col1, col2, do_print):
     return df1
 
 
-def create_map(df):
+def create_map(df, col1):
     regions_geo = 'regions.geojson'
     df1 = df.groupby('Region').size()
-    map_1 = folium.Map(location=[52.958, 0.9], zoom_start=7)
+    map_1 = folium.Map(location=[52.958, 0.7], zoom_start=7)
     map_1.choropleth(geo_path=regions_geo, data=df1,
-                   columns=['region_code', 'Size'],
-                   key_on='properties.region_code',
-                   fill_color='BuPu', fill_opacity=0.7, line_opacity=0.2,
-                   legend_name='No. of people from region in census')
-    return map_1
+                     columns=['region_code', 'Size'],
+                     key_on='properties.region_code',
+                     fill_color='BuPu', fill_opacity=0.7, line_opacity=0.2,
+                     legend_name='No. of people from region in census')
 
-def create_bar_plots_on_map(map_1, df, col1):
     for region in df['Region'].unique().tolist():
         df1 = df[df['Region'].str.contains(region)]
-        print(df1)
-        bar = vincent.Bar(df1[col1].value_counts(), width=350, height=175)
+        bar = vincent.Bar(df1[col1].value_counts(), width=350, height=250)
+        xtitle = col1 + "in: " + regions.get(region)
+        bar.axis_titles(x=xtitle, y='')
         loc = coordinates.get(region)
-        popup1 = folium.Popup(max_width=800, ).add_child(folium.Vega(bar, width=400, height=200))
+        popup1 = folium.Popup(max_width=800, ).add_child(folium.Vega(bar, width=400, height=300))
         folium.RegularPolygonMarker(loc, fill_color='#43d9de', radius=12, popup=popup1).add_to(map_1)
-    map_1.save('map_1.html')
 
+    return map_1
 
 
 d = read_csv('data')
-create_bar_plots_on_map(create_map(d), d, 'Region')
-
+#create_plots_on_map(create_map(d), d, 'Country of Birth')
 # create_map(data)
 # create_3d_bar(group(data, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry')
-# create_plotly_plot(group(data, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry', 'Region vs Industry')
+#create_plotly_plot(group(d, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry', 'Region vs Industry')
 
 
 
