@@ -37,6 +37,10 @@ economic_acts = {1: "Employe", 2: "Self-employed", 3: "Unemployed", 4: "Full-tim
                  5: "Retired", 6: "Student", 7: "Looking after home or family",
                  8: "Long-term sick or disabled", 9: "Other", -9: "Aged under 16 or students"}
 
+residence_type = {'C':"Resident in a communal establishment", 'H': "Not resident in a communal establishment"}
+family_composition = {1: "Not in a family", 2: "Married/same-sex civil partnership couple family", 3: "Married/same-sex civil partnership couple family",
+                     4: "Cohabiting couple family", 5 : "Lone parent family ", 6: "Other related family" }
+
 
 def read_csv(file_name):
     df = pd.read_csv(file_name, error_bad_lines=False)
@@ -128,7 +132,7 @@ def create_plotly_plot(df, col1, col2, title):
 
     layout = dict(title=title, showlegend=False,scene=dict(xaxis=dict(title=''),yaxis=dict(title=''),zaxis=dict(title=''),camera=dict(eye=dict(x=-1.7, y=-1.7, z=0.5))))
     fig = dict(data=out, layout=layout)
-    return py.iplot(fig, validate=False, filename='3d-lines')
+    url = py.plot(fig, validate=False, filename='filled-3d-lines')
 
 
 def create_3d_plot(df):
@@ -175,20 +179,8 @@ d = read_csv('data')
 #create_plots_on_map(create_map(d), d, 'Country of Birth')
 # create_map(data)
 # create_3d_bar(group(data, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry')
-#create_plotly_plot(group(d, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry', 'Region vs Industry')
+create_plotly_plot(group(d, 'Region', 'Industry', False).reset_index(name='count'), 'Region', 'Industry', 'Region vs Industry')
 
 
 
 
-
-
-
-
-
-
-# create_bar_plot('bar', data, 'Region', regions, 'Number of Records for each region', 'Regions', 'No. of Records')
-# create_plotly_plot(group(data, 'Occupation', 'Approximated Social Grade').reset_index(name='count'), 'Occupation', 'Approximated Social Grade', 'Occupation vs Approximated Social Grade')
-# analyse(d)
-# create_bar_plot('bar', data, 'Occupation', occupations, 'Number of Records for each Occupation', 'Occupation', 'No. of Records')
-# create_pie_plot('pie', data, 'Age', ages, 'Distribution of the sample by age')
-# create_pie_plot('pie', data, 'Economic Activity', economic_acts, 'Distribution of the sample by the economic activity')
